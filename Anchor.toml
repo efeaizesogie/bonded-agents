@@ -1,0 +1,19 @@
+[toolchain]
+anchor_version = "0.31.1"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.devnet]
+bonded_agents = "jVwyysSicpg9RtaiXtyuuWTNC8GGE41K1qcGPjAH29F"
+
+[programs.localnet]
+bonded_agents = "jVwyysSicpg9RtaiXtyuuWTNC8GGE41K1qcGPjAH29F"
+
+[provider]
+cluster = "devnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "echo 'run the demo scripts in app/scripts'"

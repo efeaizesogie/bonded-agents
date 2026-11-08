@@ -1,0 +1,58 @@
+[
+ {
+  "mode": "build",
+  "scope": "page",
+  "shape": "Map / Diagram",
+  "theme": "furrow",
+  "axes": "light/grotesk-sans/warm",
+  "hero": "Banner",
+  "nav": "slab",
+  "footer": "colophon block",
+  "imagery": "photographs, library 2, natural con=8 sat=-6; product built and captured",
+  "photos": [
+   "Solex_99_30_padlock_with_keys_(DSCF2659).jpg",
+   "Virginia_Tech_-_data_center.jpg"
+  ],
+  "entry": "before-and-after table beside the head",
+  "sections": [
+   "hero",
+   "map",
+   "showcase",
+   "steps",
+   "rows",
+   "index",
+   "band",
+   "footer"
+  ],
+  "signature": "the money map",
+  "waived": [],
+  "prompt": "landing page explaining bonded AI agents to a lay reader, with the tech stack",
+  "date": "2026-11-07"
+ },
+ {
+  "mode": "redesign",
+  "depth": "full",
+  "scope": "app",
+  "shape": "app screen",
+  "theme": "furrow",
+  "axes": "light/grotesk-sans/warm",
+  "nav": "top bar, wordmark left, network and wallet right",
+  "footer": "one ruled line, program id left, credit right",
+  "imagery": "none",
+  "photos": [],
+  "entry": "stat strip then ledger beside the hire sheet",
+  "sections": [
+   "top bar",
+   "intro",
+   "stat strip",
+   "agent leaderboard",
+   "hire an agent",
+   "jobs",
+   "footer"
+  ],
+  "signature": "the job record, a notebook card that ends in the arbiter verdict",
+  "waived": [],
+  "prompt": "bonded agents: hire AI agents that post a SOL bond, dispute bad work, see agents slashed",
+  "date": "2026-11-07"
+ }
+]

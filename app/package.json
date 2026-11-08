@@ -1,0 +1,45 @@
+{
+  "name": "bonded-agents-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "keys": "tsx scripts/keys.ts",
+    "init-config": "tsx scripts/init-config.ts",
+    "agent": "tsx scripts/run-agent.ts",
+    "demo:post": "tsx scripts/post-job.ts",
+    "llm:check": "tsx scripts/llm-check.ts",
+    "setup": "tsx scripts/setup.ts",
+    "e2e": "tsx scripts/e2e.ts",
+    "facts": "tsx scripts/facts-check.ts",
+    "task:dry": "tsx scripts/task-dryrun.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.6.0",
+    "@coral-xyz/anchor": "^0.31.1",
+    "@solana/wallet-adapter-base": "^0.9.27",
+    "@solana/wallet-adapter-react": "^0.15.40",
+    "@solana/wallet-adapter-react-ui": "^0.9.39",
+    "@solana/web3.js": "^1.98.4",
+    "bs58": "^6.0.0",
+    "dotenv": "^18.0.9",
+    "fflate": "^0.8.2",
+    "next": "^15.5.4",
+    "openai": "^7.53.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "tweetnacl": "^1.0.3",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.1",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}

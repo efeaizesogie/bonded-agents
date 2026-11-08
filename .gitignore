@@ -1,0 +1,12 @@
+target/
+node_modules/
+.next/
+.env
+.env.local
+keys/
+*.log
+
+# local tooling
+.claude/
+*.tsbuildinfo
+.vercel
