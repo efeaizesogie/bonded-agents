@@ -52,8 +52,10 @@ export async function honestTaskReport(kind: TaskKind, input: string, note: stri
   // Reasoning models can spend the whole budget thinking and return nothing.
   // Never submit an empty report: retry with more room, then give up loudly.
   let markdown = "";
-  for (const maxTokens of [6000, 12000]) {
-    markdown = (await chat({ system: SYSTEM, user, maxTokens })).trim();
+  // The facts are already gathered by code, so the model only writes: skip its
+  // hidden reasoning for speed, and fall back to full reasoning if it comes back thin.
+  for (const [maxTokens, fast] of [[3000, true], [8000, false]] as const) {
+    markdown = (await chat({ system: SYSTEM, user, maxTokens, fast })).trim();
     if (/^##\s/m.test(markdown) && markdown.length > 200) break;
   }
   if (!/^##\s/m.test(markdown)) throw new Error("The model returned no report; not submitting.");

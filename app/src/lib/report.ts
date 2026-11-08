@@ -45,8 +45,14 @@ export async function storeReport(connection: Connection, payer: Keypair, envelo
   const parts: string[] = [];
   for (let i = 0; i < envelope.length; i += CHUNK) parts.push(envelope.slice(i, i + CHUNK));
   if (parts.length > MAX_CHUNKS) throw new Error(`Report is too long (${parts.length} parts, max ${MAX_CHUNKS}).`);
-  const sigs: string[] = [];
-  for (const [i, part] of parts.entries()) {
+  // Send every part at once (they're independent), then wait for all of them.
+  const sigs = await Promise.all(parts.map((part, i) => sendPart(connection, payer, part, i, parts.length)));
+  return `${POINTER_PREFIX}${hashOf(envelope)}:${sigs.join(",")}`;
+}
+
+async function sendPart(connection: Connection, payer: Keypair, part: string, i: number, total: number): Promise<string> {
+  for (let attempt = 1; ; attempt++) {
+    // Built fresh each attempt so a retry gets a new blockhash.
     // The Memo program checks every byte is valid UTF-8, which costs more than
     // the default 200k compute units for a ~1 KB memo.
     const tx = new Transaction().add(
@@ -54,20 +60,16 @@ export async function storeReport(connection: Connection, payer: Keypair, envelo
       new TransactionInstruction({
         programId: MEMO_PROGRAM,
         keys: [],
-        data: Buffer.from(`BA1|rpt|${i + 1}/${parts.length}|${part}`, "utf8"),
+        data: Buffer.from(`BA1|rpt|${i + 1}/${total}|${part}`, "utf8"),
       }),
     );
-    for (let attempt = 1; ; attempt++) {
-      try {
-        sigs.push(await sendAndConfirmTransaction(connection, tx, [payer], { commitment: "confirmed" }));
-        break;
-      } catch (e) {
-        if (attempt >= 4) throw e;
-        await new Promise((r) => setTimeout(r, 2000 * attempt));
-      }
+    try {
+      return await sendAndConfirmTransaction(connection, tx, [payer], { commitment: "confirmed" });
+    } catch (e) {
+      if (attempt >= 4) throw e;
+      await new Promise((r) => setTimeout(r, 1500 * attempt));
     }
   }
-  return `${POINTER_PREFIX}${hashOf(envelope)}:${sigs.join(",")}`;
 }
 
 /** Read a report's chunks back from chain and check them against the pointer's hash. */

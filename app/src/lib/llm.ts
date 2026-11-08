@@ -32,7 +32,7 @@ export function modelName(): string {
 }
 
 /** Send one system + user prompt and return the model's text reply. */
-export async function chat(opts: { system: string; user: string; maxTokens?: number }): Promise<string> {
+export async function chat(opts: { system: string; user: string; maxTokens?: number; fast?: boolean }): Promise<string> {
   const which = provider();
   const model = modelName();
 
@@ -47,7 +47,9 @@ export async function chat(opts: { system: string; user: string; maxTokens?: num
           { role: "system", content: opts.system },
           { role: "user", content: opts.user },
         ],
-      });
+        // fast: skip the model's hidden reasoning (about 4x fewer tokens, quicker replies).
+        ...(opts.fast ? { chat_template_kwargs: { enable_thinking: false } } : {}),
+      } as Parameters<typeof client.chat.completions.create>[0] & { stream?: false });
       const text = res.choices[0]?.message?.content ?? "";
       return text.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
     } catch (e) {

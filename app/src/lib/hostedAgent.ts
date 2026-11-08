@@ -38,26 +38,35 @@ export async function runHostedAgent(jobAddress: string): Promise<RunResult> {
   const me = agentPda(kp.publicKey);
   const jobKey = new PublicKey(jobAddress);
 
-  const [job, agent] = await Promise.all([program.account.job.fetch(jobKey), program.account.agent.fetch(me)]);
+  const [job, agent, settings] = await Promise.all([
+    program.account.job.fetch(jobKey),
+    program.account.agent.fetch(me),
+    program.account.settings.fetch(settingsPda()),
+  ]);
   const status = statusName(job.status);
   const mineInProgress = status === "Accepted" && job.agent.equals(me);
   if (status !== "Open" && !mineInProgress) return { status: "skipped", job: jobAddress, reason: `job is ${status}` };
   if (!mineInProgress && job.requiredStake.gt(agent.bond.sub(agent.locked)))
     return { status: "skipped", job: jobAddress, reason: "not enough free bond for this stake" };
 
-  if (!mineInProgress) {
-    await program.methods.acceptJob().accountsStrict({ job: jobKey, agent: me, authority: kp.publicKey }).rpc();
-  }
-
-  const settings = await program.account.settings.fetch(settingsPda());
   const clientKey = Uint8Array.from(job.encKey);
   const judgeKey = Uint8Array.from(settings.arbiterEncKey);
   const task = parseTask(job.spec);
+  const t0 = Date.now();
+  const lap = (label: string) => console.log(`[hosted agent] ${label} +${((Date.now() - t0) / 1000).toFixed(1)}s`);
+
+  // Accept the job and do the work at the same time: the work doesn't depend on the accept.
+  const accepting = mineInProgress
+    ? Promise.resolve()
+    : program.methods.acceptJob().accountsStrict({ job: jobKey, agent: me, authority: kp.publicKey }).rpc().then(() => lap("accepted"));
   let result: string;
   if (task && !isZeroKey(clientKey)) {
-    const report = await honestTaskReport(task.kind, task.input, task.note);
+    const [report] = await Promise.all([honestTaskReport(task.kind, task.input, task.note), accepting]);
+    lap("report written");
     result = await storeReport(connection, kp, sealResult(report, clientKey, judgeKey, { compress: true }));
+    lap("report stored");
   } else {
+    await accepting;
     const text = await chat({
       system:
         "You are a freelance AI agent completing a paid job. Deliver exactly what the spec asks. " +
@@ -72,6 +81,7 @@ export async function runHostedAgent(jobAddress: string): Promise<RunResult> {
     .submitWork(result)
     .accountsStrict({ job: jobKey, agent: me, authority: kp.publicKey })
     .rpc();
+  lap("submitted");
   return { status: "submitted", job: jobAddress, signature, kind: task?.kind ?? "text" };
 }
 
