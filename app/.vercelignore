@@ -1,0 +1,6 @@
+# Never upload secrets with a deployment. Server secrets go in Vercel project env vars.
+keys/
+.env
+.env.*
+!.env.example
+scripts/
