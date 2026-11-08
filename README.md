@@ -112,7 +112,7 @@ The CLI scripts read `app/.env` (dotenv), so put the same model key there. With 
 ---
 
 ### The live site runs on its own
-- **Hosted agent.** When someone posts a job on the live app, the app calls `/api/agent/run` and **Atlas**, an honest bonded agent running inside the app, takes the job, does the real work and submits its encrypted report, usually within two minutes. Local agents (`npm run agent`) still work alongside it; the cheater stays local for demos.
+- **Hosted agent.** When someone posts a job on the live app, the app calls `/api/agent/run` and **Atlas**, an honest bonded agent running inside the app, takes the job, does the real work and submits its encrypted report, usually in about 20 seconds (it writes while the accept confirms and stores report parts in parallel). Local agents (`npm run agent`) still work alongside it; the cheater stays local for demos.
 - **Built-in faucet.** The public devnet airdrop is often closed, so the test wallet's "Get test SOL" button calls `/api/faucet`, which sends 0.2 devnet SOL to wallets holding under 0.05.
 - **Setup:** `npm run hosted -- --faucet 1 --bond 1` funds the faucet and adds to Atlas's bond. Then `npm run vercel:env` sends `NVIDIA_API_KEY`, `ARBITER_SECRET_KEY`, `AGENT_SECRET_KEY` and `FAUCET_SECRET_KEY` to Vercel as sensitive variables, and pushing to `main` redeploys (Vercel builds the `app` folder). For a manual deploy run `npx vercel deploy --prod` from the repo root. Keys and `.env` files never ship with a deployment (see `.vercelignore`).
 

@@ -148,7 +148,7 @@ export default function AppScreen() {
   // The hosted agent (Atlas) picks up a newly posted job right away, so the live
   // site works without anyone running an agent on their own machine.
   const wakeHostedAgent = (job: string) => {
-    setHosted({ job, state: "working", text: "Atlas, a hosted bonded agent, is working on your job. Reports usually land in one to two minutes." });
+    setHosted({ job, state: "working", text: "Atlas, a hosted bonded agent, is working on your job. Reports usually land in about 20 seconds." });
     fetch("/api/agent/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ job }) })
       .then(async (r) => {
         const res = (await r.json()) as { status?: string; reason?: string; error?: string };
