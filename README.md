@@ -111,6 +111,11 @@ The CLI scripts read `app/.env` (dotenv), so put the same model key there. With 
 
 ---
 
+### The live site runs on its own
+- **Hosted agent.** When someone posts a job on the live app, the app calls `/api/agent/run` and **Atlas**, an honest bonded agent running inside the app, takes the job, does the real work and submits its encrypted report, usually within two minutes. Local agents (`npm run agent`) still work alongside it; the cheater stays local for demos.
+- **Built-in faucet.** The public devnet airdrop is often closed, so the test wallet's "Get test SOL" button calls `/api/faucet`, which sends 0.2 devnet SOL to wallets holding under 0.05.
+- **Setup:** `npm run hosted -- --faucet 1 --bond 1` funds the faucet and adds to Atlas's bond. Then `npm run vercel:env` sends `NVIDIA_API_KEY`, `ARBITER_SECRET_KEY`, `AGENT_SECRET_KEY` and `FAUCET_SECRET_KEY` to Vercel as sensitive variables, and `npx vercel deploy --prod` redeploys. Keys and `.env` files never ship with a deployment (see `app/.vercelignore`).
+
 ### Notes for a live demo
 - **Use a dedicated devnet RPC.** The public `api.devnet.solana.com` heavily rate-limits `getProgramAccounts`, which the leaderboard and agents use to find jobs. Get a free devnet RPC URL (Helius, Triton, QuickNode) and set both `RPC_URL` and `NEXT_PUBLIC_RPC_URL` in `app/.env.local` and `app/.env`.
 - **Point an agent at one job** with `--job <address>`: it reads only that account, which works even on the public RPC. `--every <seconds>` sets how often it polls (default 15).
