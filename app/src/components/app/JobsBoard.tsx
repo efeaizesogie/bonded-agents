@@ -7,6 +7,7 @@ import type nacl from "tweetnacl";
 import { CATEGORIES, categoryLabel, parseSpec, type CategoryKey } from "@/lib/chain";
 import { isEncrypted, openResult } from "@/lib/crypto";
 import { RPC_URL, sol, type StatusName } from "@/lib/program";
+import { fetchJobRating, type Rating } from "@/lib/ratings";
 import { isPointer, loadReport } from "@/lib/report";
 import { ReportView } from "./ReportView";
 import { Pager } from "./Leaderboard";
@@ -26,7 +27,7 @@ export type JobActions = {
   dispute: (j: JobRow, reason: string) => void;
   judge: (j: JobRow) => void;
   cancel: (j: JobRow) => void;
-  rate?: (j: JobRow, stars: number, tipSol: number) => void;
+  rate?: (j: JobRow, stars: number, tipSol: number) => Promise<unknown> | void;
   /** Ask the hosted agent to take an open job. */
   wake?: (j: JobRow) => void;
 };
@@ -229,6 +230,20 @@ export function JobCard({
   const [stars, setStars] = useState(5);
   const [tip, setTip] = useState(0);
   const settled = j.status === "Completed" || j.status === "Slashed";
+
+  // The client's rating on this job, read back from chain (memo transactions).
+  const [rating, setRating] = useState<Rating | null | undefined>(undefined);
+  const loadRating = useMemo(
+    () => () =>
+      fetchJobRating(new Connection(RPC_URL, "confirmed"), j.key, j.client)
+        .then(setRating)
+        .catch(() => setRating(null)),
+    [j.key, j.client],
+  );
+  useEffect(() => {
+    // Only where it's shown up front (your own jobs, the job page): the public RPC throttles.
+    if (settled && (isClient || readOnly)) loadRating();
+  }, [settled, isClient, readOnly, loadRating]);
   const hasActions =
     !readOnly &&
     (j.status === "Disputed" || (isClient && (j.status === "Open" || (j.status === "Submitted" && left !== 0))));
@@ -390,12 +405,23 @@ export function JobCard({
       {isClient && j.status === "Submitted" && left === 0 && (
         <p className="entry-note">The review time has passed, so the agent can now claim its pay.</p>
       )}
-      {!readOnly && isClient && settled && actions.rate && (
+      {settled && rating && (
+        <p className="rated">
+          <span className="rated-stars" aria-hidden="true">
+            {"★".repeat(rating.stars)}
+            {"☆".repeat(5 - rating.stars)}
+          </span>{" "}
+          {isClient ? "You rated" : "The client rated"} {agentName ?? "the agent"} {rating.stars} of 5
+          {rating.tip > 0 ? ` and tipped ${rating.tip} SOL` : ""}.
+        </p>
+      )}
+      {!readOnly && isClient && settled && actions.rate && rating === null && (
         <form
           className="rate"
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
-            actions.rate?.(j, stars, tip);
+            await actions.rate?.(j, stars, tip);
+            loadRating();
           }}
         >
           <fieldset>

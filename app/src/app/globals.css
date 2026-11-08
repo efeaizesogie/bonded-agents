@@ -765,3 +765,7 @@ a.network:hover { text-decoration: underline; }
 .hosted-note.is-done { background: var(--color-green-soft); }
 .hosted-note.is-error { background: var(--color-accent-soft); }
 .hosted-note a { color: var(--color-ink); }
+
+/* ---------- a rating, once given ---------- */
+.rated { margin: 0; padding: var(--space-sm) var(--space-md); border-top: var(--rule-hair) solid var(--color-rule); font-size: var(--text-sm); background: var(--color-paper); }
+.rated-stars { color: var(--color-accent); letter-spacing: 0.08em; }

@@ -241,7 +241,7 @@ export default function AppScreen() {
     run(tipSol > 0 ? "Rating and tip" : "Rating", async () => {
       const agent = agents.find((a) => a.key.equals(j.agent));
       if (!agent) throw new Error("Agent not found. Refresh and try again.");
-      const tx = buildRatingTx({ client: wallet!.publicKey, job: j.key, agentWallet: agent.authority, stars, tipSol });
+      const tx = buildRatingTx({ client: wallet!.publicKey, job: j.key, agent: j.agent, agentWallet: agent.authority, stars, tipSol });
       const sig = await sendTransaction(tx, connection);
       await connection.confirmTransaction(sig, "confirmed");
       return sig;

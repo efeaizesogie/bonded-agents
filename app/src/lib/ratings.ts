@@ -3,7 +3,9 @@
 //
 // A rating is one transaction signed by the job's client:
 //   1. optional SOL tip straight to the agent's wallet
-//   2. memo "BA1|rate|<job address>|<1-5>"
+//   2. zero-lamport transfers that tag the job and agent accounts, so the rating
+//      shows up in their transaction history (that's how it is found again)
+//   3. memo "BA1|rate|<job address>|<1-5>"
 // When reading, a rating only counts if the signer is that job's client, the
 // job belongs to the agent and has settled. One rating per job (the latest).
 import {
@@ -27,12 +29,17 @@ export type RatingSummary = { average: number | null; count: number; tips: numbe
 export function buildRatingTx(opts: {
   client: PublicKey;
   job: PublicKey;
+  agent: PublicKey; // the agent account (PDA)
   agentWallet: PublicKey;
   stars: number;
   tipSol: number;
 }): Transaction {
   const stars = Math.max(1, Math.min(5, Math.round(opts.stars)));
   const tx = new Transaction();
+  // Tag the job and the agent so getSignaturesForAddress finds this rating.
+  for (const tag of [opts.job, opts.agent]) {
+    tx.add(SystemProgram.transfer({ fromPubkey: opts.client, toPubkey: tag, lamports: 0 }));
+  }
   if (opts.tipSol > 0) {
     tx.add(
       SystemProgram.transfer({
@@ -75,12 +82,19 @@ export async function fetchRatings(
   program: BondedProgram,
   agent: PublicKey,
   agentWallet: PublicKey,
-  limit = 25,
+  limit = 100,
 ): Promise<RatingSummary> {
-  const all = await withRetry(() => connection.getSignaturesForAddress(agentWallet, { limit }));
+  // New ratings tag the agent account; older ones only reached the wallet with a tip.
+  const [byAgent, byWallet] = await Promise.all([
+    withRetry(() => connection.getSignaturesForAddress(agent, { limit })),
+    withRetry(() => connection.getSignaturesForAddress(agentWallet, { limit })),
+  ]);
   // The signature list already carries each transaction's memo, so only the
   // rating transactions are fetched (one at a time: the public RPC throttles batches).
-  const sigs = all.filter((s) => !s.err && s.memo?.includes(PREFIX));
+  const seen = new Set<string>();
+  const sigs = [...byAgent, ...byWallet]
+    .filter((s) => !s.err && s.memo?.includes(PREFIX) && !seen.has(s.signature) && seen.add(s.signature))
+    .sort((a, b) => (b.blockTime ?? 0) - (a.blockTime ?? 0));
   const txs: (ParsedTransactionWithMeta | null)[] = [];
   for (const s of sigs) {
     txs.push(
@@ -120,4 +134,28 @@ export async function fetchRatings(
   const items = [...latest.values()];
   const average = items.length ? items.reduce((s, r) => s + r.stars, 0) / items.length : null;
   return { average, count: items.length, tips: items.reduce((s, r) => s + r.tip, 0), items };
+}
+
+/** The client's rating on one job, if any (newest wins). */
+export async function fetchJobRating(
+  connection: Connection,
+  job: PublicKey,
+  client: PublicKey,
+  agentWallet?: PublicKey,
+): Promise<Rating | null> {
+  const sigs = await withRetry(() => connection.getSignaturesForAddress(job, { limit: 50 }));
+  for (const s of sigs) {
+    if (s.err || !s.memo?.includes(`${PREFIX}${job.toBase58()}|`)) continue;
+    const tx = await withRetry(() =>
+      connection.getParsedTransaction(s.signature, { maxSupportedTransactionVersion: 0, commitment: "confirmed" }),
+    );
+    if (!tx || tx.meta?.err) continue;
+    const signer = tx.transaction.message.accountKeys.find((k) => k.signer)?.pubkey;
+    if (!signer?.equals(client)) continue; // only the job's client can rate it
+    const memo = readMemo(tx);
+    const stars = Number(memo?.split("|")[3]);
+    if (!(stars >= 1 && stars <= 5)) continue;
+    return { job: job.toBase58(), stars, tip: agentWallet ? readTip(tx, signer, agentWallet) : 0, at: tx.blockTime ?? null, signature: s.signature };
+  }
+  return null;
 }
