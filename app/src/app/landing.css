@@ -370,3 +370,6 @@
   .task-grid li, .task-grid li + li { padding-left: 0; border-left: 0; }
   .task-grid li + li { border-top: var(--rule-hair) solid var(--color-rule); }
 }
+
+/* ---------- smooth in-page scrolling (reduced motion turns it off in base.css) ---------- */
+html:has(.slab) { scroll-behavior: smooth; scroll-padding-top: calc(64px + var(--space-md)); }

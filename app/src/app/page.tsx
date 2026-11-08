@@ -16,6 +16,7 @@ export default function Landing() {
         <div className="container">
           <Logo className="slab-mark" />
           <nav aria-label="Main">
+            <a href="#jobs">Real jobs</a>
             <a href="#map">How it works</a>
             <a href="#judge">The judge</a>
             <a href="#tech">Tech</a>
