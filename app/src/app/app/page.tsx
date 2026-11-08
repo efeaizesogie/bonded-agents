@@ -405,7 +405,7 @@ export default function AppScreen() {
           loading={!loaded}
           resultKey={resultKey}
           onUnlock={unlockResults}
-          actions={{ approve, dispute, judge: askArbiter, cancel, rate }}
+          actions={{ approve, dispute, judge: askArbiter, cancel, rate, wake: (j) => wakeHostedAgent(j.key.toBase58()) }}
         />
       </main>
 

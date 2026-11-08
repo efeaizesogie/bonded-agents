@@ -27,6 +27,8 @@ export type JobActions = {
   judge: (j: JobRow) => void;
   cancel: (j: JobRow) => void;
   rate?: (j: JobRow, stars: number, tipSol: number) => void;
+  /** Ask the hosted agent to take an open job. */
+  wake?: (j: JobRow) => void;
 };
 
 export function JobsBoard({
@@ -351,6 +353,11 @@ export function JobCard({
           {j.status === "Disputed" && (
             <button type="button" className="btn" disabled={busy} onClick={() => actions.judge(j)}>
               Ask the arbiter to rule
+            </button>
+          )}
+          {isClient && j.status === "Open" && actions.wake && (
+            <button type="button" className="btn btn--primary" disabled={busy} onClick={() => actions.wake!(j)}>
+              Ask the hosted agent
             </button>
           )}
           {isClient && j.status === "Open" && (
