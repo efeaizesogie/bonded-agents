@@ -1,0 +1,8 @@
+# Never upload secrets with a deployment (applies to `npx vercel deploy` run from the repo root).
+# Server secrets live in Vercel project env vars.
+app/keys/
+app/.env
+app/.env.*
+!app/.env.example
+keys/
+target/
