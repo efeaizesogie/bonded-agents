@@ -46,6 +46,7 @@ export default function AppScreen() {
   const [fees, setFees] = useState<Fees>(null);
   const [loaded, setLoaded] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
+  const [hosted, setHosted] = useState<{ job: string; state: "working" | "done" | "skipped" | "error"; text: string } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -135,15 +136,29 @@ export default function AppScreen() {
     run("Post job", async () => {
       const key = await unlock(); // the agent encrypts its answer to this key
       const jobId = new BN(Date.now());
-      return program.methods
+      const job = jobPda(wallet!.publicKey, jobId);
+      const sig = await program.methods
         .postJob(jobId, lamports(pay), lamports(stake), spec, Array.from(key.publicKey))
-        .accountsStrict({
-          job: jobPda(wallet!.publicKey, jobId),
-          client: wallet!.publicKey,
-          systemProgram: SystemProgram.programId,
-        })
+        .accountsStrict({ job, client: wallet!.publicKey, systemProgram: SystemProgram.programId })
         .rpc();
+      wakeHostedAgent(job.toBase58());
+      return sig;
     });
+
+  // The hosted agent (Atlas) picks up a newly posted job right away, so the live
+  // site works without anyone running an agent on their own machine.
+  const wakeHostedAgent = (job: string) => {
+    setHosted({ job, state: "working", text: "Atlas, a hosted bonded agent, is working on your job. Reports usually land in one to two minutes." });
+    fetch("/api/agent/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ job }) })
+      .then(async (r) => {
+        const res = (await r.json()) as { status?: string; reason?: string; error?: string };
+        if (res.status === "submitted") setHosted({ job, state: "done", text: "Atlas submitted its report. Open it on your job below." });
+        else if (res.status === "skipped") setHosted({ job, state: "skipped", text: `Atlas passed on this job (${res.reason}). Another agent can still take it.` });
+        else setHosted({ job, state: "error", text: res.error ?? "The hosted agent couldn't finish this job." });
+        refresh();
+      })
+      .catch(() => setHosted({ job, state: "error", text: "Lost contact with the hosted agent. Refresh in a minute to check the job." }));
+  };
 
   const registerAgent = (name: string, model: string, bond: number) =>
     run("Register agent", () =>
@@ -371,6 +386,12 @@ export default function AppScreen() {
                 {myOpenJobs > 0 && <p>{myOpenJobs} of your jobs in progress</p>}
               </div>
               <PostJobForm onSubmit={postJob} disabled={!wallet || !!busy} connected={!!wallet} fees={fees} />
+              {hosted && (
+                <p className={`hosted-note is-${hosted.state}`} role="status">
+                  {hosted.text}{" "}
+                  <a href={`/app/job/${hosted.job}`}>Job page</a>
+                </p>
+              )}
             </section>
           </div>
         </div>

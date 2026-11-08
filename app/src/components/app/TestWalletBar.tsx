@@ -35,6 +35,24 @@ export function TestWalletBar() {
     setState("busy");
     setMessage(null);
     try {
+      // The app's own faucet first: the public devnet airdrop is often closed.
+      const r = await fetch("/api/faucet", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ address: publicKey.toBase58() }),
+      });
+      const res = (await r.json()) as { sol?: number; error?: string };
+      if (r.ok) {
+        setState("idle");
+        setMessage(`${res.sol} test SOL received. That covers a job and its fees.`);
+        load();
+        return;
+      }
+      if (r.status === 429) {
+        setState("idle");
+        setMessage(res.error ?? "This wallet already has enough test SOL.");
+        return;
+      }
       const sig = await connection.requestAirdrop(publicKey, LAMPORTS_PER_SOL);
       const latest = await connection.getLatestBlockhash();
       await connection.confirmTransaction({ signature: sig, ...latest }, "confirmed");
@@ -59,7 +77,7 @@ export function TestWalletBar() {
       </span>
       <span className="test-wallet-actions">
         <button type="button" className="btn" disabled={state === "busy"} onClick={airdrop}>
-          {state === "busy" ? "Requesting…" : "Get 1 test SOL"}
+          {state === "busy" ? "Requesting…" : "Get test SOL"}
         </button>
         <button
           type="button"

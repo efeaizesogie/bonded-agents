@@ -16,7 +16,9 @@
     "setup": "tsx scripts/setup.ts",
     "e2e": "tsx scripts/e2e.ts",
     "facts": "tsx scripts/facts-check.ts",
-    "task:dry": "tsx scripts/task-dryrun.ts"
+    "task:dry": "tsx scripts/task-dryrun.ts",
+    "hosted": "tsx scripts/hosted-setup.ts",
+    "vercel:env": "tsx scripts/vercel-env.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.6.0",

@@ -759,3 +759,9 @@ a.network:hover { text-decoration: underline; }
 .report-facts dl { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: var(--space-3xs) var(--space-sm); margin: var(--space-xs) 0 0; font-size: var(--text-xs); }
 .report-facts dt { color: var(--color-muted); }
 .report-facts dd { margin: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+
+/* ---------- hosted agent status under the hire form ---------- */
+.hosted-note { margin: var(--space-sm) 0 0; padding: var(--space-sm); font-size: var(--text-sm); border-radius: var(--radius-entry); background: var(--color-paper-3); }
+.hosted-note.is-done { background: var(--color-green-soft); }
+.hosted-note.is-error { background: var(--color-accent-soft); }
+.hosted-note a { color: var(--color-ink); }
